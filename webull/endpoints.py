@@ -12,7 +12,7 @@ class urls :
         self.base_ustrade_url = 'https://ustrade.webullfinance.com/api'
         self.base_paperfintech_url = 'https://act.webullfintech.com/webull-paper-center/api'
         self.base_fintech_gw_url = 'https://quotes-gw.webullfintech.com/api'
-        self.base_userfintech_url = 'https://userapi.webullfintech.com/api'
+        self.base_userfintech_url = 'https://u1suser.webullfintech.com/api'
         self.base_new_trade_url = 'https://trade.webullfintech.com/api'
         self.base_ustradebroker_url = 'https://ustrade.webullbroker.com/api'
         self.base_securitiesfintech_url = 'https://securitiesapi.webullfintech.com/api'
@@ -53,9 +53,9 @@ class urls :
     def analysis_capital_flow(self, stock, show_hist):
         return f'{self.base_securities_url}/wlas/capitalflow/ticker?tickerId={stock}&showHis={show_hist}'
 
-    def bars(self, stock, interval='d1', count=800):
+    def bars(self, stock, interval='d1', count=1200, timestamp=None):
         #new
-        return f'{self.base_fintech_gw_url}/quote/charts/query?tickerIds={stock}&type={interval}&count={count}'
+        return f'{self.base_fintech_gw_url}/quote/charts/query?tickerIds={stock}&type={interval}&count={count}&timestamp={timestamp}'
         #old
         return f'{self.base_quote_url}/quote/tickerChartDatas/v5/{stock}'
 
@@ -90,13 +90,14 @@ class urls :
         return f'{self.base_userbroker_url}/user/warning/v2/query/tickers'
 
     def login(self):
-        return f'{self.base_user_url}/passport/login/v5/account'
+        return f'{self.base_userfintech_url}/user/v1/login/account/v2'
 
-    def get_mfa(self) :
-        return f'{self.base_userfintech_url}/passport/v2/verificationCode/send'
+    def get_mfa(self):
+        #return f'{self.base_userfintech_url}/user/v1/verificationCode/send/v2'
+        return f'{self.base_user_url}/user/v1/verificationCode/send/v2'
 
-    def check_mfa(self) :
-        return f'{self.base_userfintech_url}/passport/v2/verificationCode/checkCode'
+    def check_mfa(self):
+        return f'{self.base_userfintech_url}/user/v1/verificationCode/checkCode'
 
     def get_security(self, username, account_type, region_code, event, time, url=0) :
         if url == 1 :
@@ -104,7 +105,7 @@ class urls :
         else :
             url = 'getSecurityQuestion'
 
-        return f'{self.base_userfintech_url}/user/risk/{url}?account={username}&accountType={account_type}&regionId={region_code}&event={event}&v={time}'
+        return f'{self.base_user_url}/user/risk/{url}?account={username}&accountType={account_type}&regionId={region_code}&event={event}&v={time}'
 
     def next_security(self, username, account_type, region_code, event, time, url=0) :
         if url == 1 :
@@ -112,13 +113,13 @@ class urls :
         else :
             url = 'nextSecurityQuestion'
 
-        return f'{self.base_userfintech_url}/user/risk/{url}?account={username}&accountType={account_type}&regionId={region_code}&event={event}&v={time}'
+        return f'{self.base_user_url}/user/risk/{url}?account={username}&accountType={account_type}&regionId={region_code}&event={event}&v={time}'
 
     def check_security(self) :
-        return f'{self.base_userfintech_url}/user/risk/checkAnswer'
+        return f'{self.base_user_url}/user/risk/checkAnswer'
 
     def logout(self):
-        return f'{self.base_userbroker_url}/passport/login/logout'
+        return f'{self.base_userfintech_url}/user/v1/logout'
 
     def news(self, stock, Id, items):
         return f'{self.base_fintech_gw_url}/information/news/tickerNews?tickerId={stock}&currentNewsId={Id}&pageSize={items}'

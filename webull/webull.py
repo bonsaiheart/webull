@@ -17,10 +17,9 @@ from pytz import timezone
 
 from . import endpoints
 
-
 class webull :
 
-    def __init__(self) :
+    def __init__(self, region_code=None) :
         self._session = requests.session()
         self._headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:99.0) Gecko/20100101 Firefox/99.0',
@@ -56,7 +55,7 @@ class webull :
 
         #miscellaenous
         self._did = self._get_did()
-        self._region_code = 6
+        self._region_code = region_code or 6
         self.zone_var = 'dc_core_r001'
         self.timeout = 15
 
@@ -81,6 +80,28 @@ class webull :
             did = uuid.uuid4().hex
             pickle.dump(did, open(filename, 'wb'))
         return did
+
+    def _set_did(self, did, path=''):
+        '''
+        If your starting to use this package after webull's new image verification for login, you'll
+        need to login from a browser to get your did file in order to login through this api. You can
+        find your did file by using this link:
+
+        https://github.com/tedchou12/webull/wiki/Workaround-for-Login
+
+        and then headers tab instead of response head, and finally look for the did value from the
+        request headers.
+
+        Then, you can run this program to save your did into did.bin so that it can be accessed in the
+        future without the did explicitly being in your code.
+
+        path: path to did.bin. For example _get_did('cache') will search for cache/did.bin instead.
+        '''
+        filename = 'did.bin'
+        if path:
+            filename = os.path.join(path, filename)
+        pickle.dump(did, open(filename, 'wb'))
+        return True
 
     def build_req_headers(self, include_trade_token=False, include_time=False, include_zone_var=True):
         '''
@@ -207,7 +228,6 @@ class webull :
         data = response.json()
         if len(data) == 0 :
             response = requests.get(self._urls.next_security(username, account_type, self._region_code, 'PRODUCT_LOGIN', time, 1), headers=self._headers, timeout=self.timeout)
-            print(response)
             data = response.json()
 
         return data
@@ -593,17 +613,17 @@ class webull :
 
         if result1['forward'] :
             data2 = {'newOrders': [
-                            {'orderType': 'LMT', 'timeInForce': time_in_force, 'quantity': int(quant),
-                             'outsideRegularTradingHour': False, 'action': 'BUY', 'tickerId': self.get_ticker(stock),
-                             'lmtPrice': float(price), 'comboType': 'MASTER', 'serialId': str(uuid.uuid4())},
-                            {'orderType': 'STP', 'timeInForce': time_in_force, 'quantity': int(quant),
-                             'outsideRegularTradingHour': False, 'action': 'SELL', 'tickerId': self.get_ticker(stock),
-                             'auxPrice': float(stop_loss_price), 'comboType': 'STOP_LOSS', 'serialId': str(uuid.uuid4())},
-                            {'orderType': 'LMT', 'timeInForce': time_in_force, 'quantity': int(quant),
-                             'outsideRegularTradingHour': False, 'action': 'SELL', 'tickerId': self.get_ticker(stock),
-                             'lmtPrice': float(limit_profit_price), 'comboType': 'STOP_PROFIT', 'serialId': str(uuid.uuid4())}],
-                            'serialId': str(uuid.uuid4())
-                    }
+                {'orderType': 'LMT', 'timeInForce': time_in_force, 'quantity': int(quant),
+                 'outsideRegularTradingHour': False, 'action': 'BUY', 'tickerId': self.get_ticker(stock),
+                 'lmtPrice': float(price), 'comboType': 'MASTER', 'serialId': str(uuid.uuid4())},
+                {'orderType': 'STP', 'timeInForce': time_in_force, 'quantity': int(quant),
+                 'outsideRegularTradingHour': False, 'action': 'SELL', 'tickerId': self.get_ticker(stock),
+                 'auxPrice': float(stop_loss_price), 'comboType': 'STOP_LOSS', 'serialId': str(uuid.uuid4())},
+                {'orderType': 'LMT', 'timeInForce': time_in_force, 'quantity': int(quant),
+                 'outsideRegularTradingHour': False, 'action': 'SELL', 'tickerId': self.get_ticker(stock),
+                 'lmtPrice': float(limit_profit_price), 'comboType': 'STOP_PROFIT', 'serialId': str(uuid.uuid4())}],
+                'serialId': str(uuid.uuid4())
+            }
 
             response2 = requests.post(self._urls.place_otoco_orders(self._account_id), json=data2, headers=headers, timeout=self.timeout)
 
@@ -623,17 +643,17 @@ class webull :
         headers = self.build_req_headers(include_trade_token=False, include_time=True)
 
         data = {'modifyOrders': [
-                        {'orderType': 'LMT', 'timeInForce': time_in_force, 'quantity': int(quant), 'orderId': str(order_id1),
-                         'outsideRegularTradingHour': False, 'action': 'BUY', 'tickerId': self.get_ticker(stock),
-                         'lmtPrice': float(price), 'comboType': 'MASTER', 'serialId': str(uuid.uuid4())},
-                        {'orderType': 'STP', 'timeInForce': time_in_force, 'quantity': int(quant), 'orderId': str(order_id2),
-                         'outsideRegularTradingHour': False, 'action': 'SELL', 'tickerId': self.get_ticker(stock),
-                         'auxPrice': float(stop_loss_price), 'comboType': 'STOP_LOSS', 'serialId': str(uuid.uuid4())},
-                        {'orderType': 'LMT', 'timeInForce': time_in_force, 'quantity': int(quant), 'orderId': str(order_id3),
-                         'outsideRegularTradingHour': False, 'action': 'SELL', 'tickerId': self.get_ticker(stock),
-                         'lmtPrice': float(limit_profit_price), 'comboType': 'STOP_PROFIT', 'serialId': str(uuid.uuid4())}],
-                        'serialId': str(uuid.uuid4())
-                }
+            {'orderType': 'LMT', 'timeInForce': time_in_force, 'quantity': int(quant), 'orderId': str(order_id1),
+             'outsideRegularTradingHour': False, 'action': 'BUY', 'tickerId': self.get_ticker(stock),
+             'lmtPrice': float(price), 'comboType': 'MASTER', 'serialId': str(uuid.uuid4())},
+            {'orderType': 'STP', 'timeInForce': time_in_force, 'quantity': int(quant), 'orderId': str(order_id2),
+             'outsideRegularTradingHour': False, 'action': 'SELL', 'tickerId': self.get_ticker(stock),
+             'auxPrice': float(stop_loss_price), 'comboType': 'STOP_LOSS', 'serialId': str(uuid.uuid4())},
+            {'orderType': 'LMT', 'timeInForce': time_in_force, 'quantity': int(quant), 'orderId': str(order_id3),
+             'outsideRegularTradingHour': False, 'action': 'SELL', 'tickerId': self.get_ticker(stock),
+             'lmtPrice': float(limit_profit_price), 'comboType': 'STOP_PROFIT', 'serialId': str(uuid.uuid4())}],
+            'serialId': str(uuid.uuid4())
+        }
 
         response = requests.post(self._urls.modify_otoco_orders(self._account_id), json=data, headers=headers, timeout=self.timeout)
 
@@ -981,18 +1001,18 @@ class webull :
         return True
 
     def active_gainer_loser(self, direction='gainer', rank_type='afterMarket', count=50) :
-          '''
-          gets gainer / loser / active stocks sorted by change
-          direction: gainer / loser / active
-          rank_type: preMarket / afterMarket / 5min / 1d / 5d / 1m / 3m / 52w (gainer/loser)
-                     volume / turnoverRatio / range (active)
-          '''
-          headers = self.build_req_headers()
+        '''
+        gets gainer / loser / active stocks sorted by change
+        direction: gainer / loser / active
+        rank_type: preMarket / afterMarket / 5min / 1d / 5d / 1m / 3m / 52w (gainer/loser)
+                   volume / turnoverRatio / range (active)
+        '''
+        headers = self.build_req_headers()
 
-          response = requests.get(self._urls.active_gainers_losers(direction, self._region_code, rank_type, count), headers=headers, timeout=self.timeout)
-          result = response.json()
+        response = requests.get(self._urls.active_gainers_losers(direction, self._region_code, rank_type, count), headers=headers, timeout=self.timeout)
+        result = response.json()
 
-          return result
+        return result
 
     def run_screener(self, region=None, price_lte=None, price_gte=None, pct_chg_gte=None, pct_chg_lte=None, sort=None,
                      sort_dir=None, vol_lte=None, vol_gte=None):
@@ -1146,10 +1166,19 @@ class webull :
         else:
             raise ValueError('Must provide a stock symbol or a stock id')
 
-        # params = {'type': interval, 'count': count, 'extendTrading': extendTrading, 'timestamp': timeStamp}
+        if timeStamp is None:
+            # if not set, default to current time
+            timeStamp = int(time.time())
+
+        params = {'extendTrading': extendTrading}
         df = DataFrame(columns=['open', 'high', 'low', 'close', 'volume', 'vwap'])
         df.index.name = 'timestamp'
-        response = requests.get(self._urls.bars(tId, interval, count), headers=headers, timeout=self.timeout)
+        response = requests.get(
+            self._urls.bars(tId, interval, count, timeStamp),
+            params=params,
+            headers=headers,
+            timeout=self.timeout,
+        )
         result = response.json()
         time_zone = timezone(result[0]['timeZone'])
         for row in result[0]['data']:
@@ -1241,8 +1270,8 @@ class webull :
             df.loc[to_datetime(datetime.fromtimestamp(int(row[0])).astimezone(time_zone))] = data
         return df.iloc[::-1]
 
-    def get_chart_data(self, stock=None, tId=None, ma=5) :
-        bars = self.get_bars(stock=stock, tId=tId, interval='d1', count=800)
+    def get_chart_data(self, stock=None, tId=None, ma=5, timestamp=None):
+        bars = self.get_bars(stock=stock, tId=tId, interval='d1', count=1200, timestamp=timestamp)
         ma_data = bars['close'].rolling(ma).mean()
         return ma_data.dropna()
 
